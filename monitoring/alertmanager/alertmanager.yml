@@ -1,0 +1,36 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "slack-notifications"
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+  routes:
+    - matchers:
+        - severity="critical"
+      receiver: "slack-critical"
+    - matchers:
+        - severity="warning"
+      receiver: "slack-notifications"
+
+receivers:
+  - name: "slack-notifications"
+    slack_configs:
+      - send_resolved: true
+        api_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+        channel: "#alerts"
+        title: '{{ template "slack.default.title" . }}'
+        text: '{{ template "slack.default.text" . }}'
+
+  - name: "slack-critical"
+    slack_configs:
+      - send_resolved: true
+        api_url: "https://hooks.slack.com/services/XXX/YYY/ZZZ"
+        channel: "#alerts-critical"
+        title: '{{ template "slack.default.title" . }}'
+        text: '{{ template "slack.default.text" . }}'
+
+templates:
+  - "/etc/alertmanager/*.tmpl"

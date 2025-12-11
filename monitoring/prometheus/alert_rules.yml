@@ -1,0 +1,40 @@
+groups:
+  - name: node-resources
+    rules:
+      - alert: HighCpuUsage
+        expr: avg by (instance) (rate(node_cpu_seconds_total{mode!="idle"}[5m])) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая загрузка CPU на {{ $labels.instance }}"
+          description: "CPU > 80% более 10 минут. Значение: {{ $value | printf \"%.2f\" }}"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти на {{ $labels.instance }}"
+          description: "RAM > 90% более 10 минут."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} - node_filesystem_free_bytes{fstype!~"tmpfs|overlay"}) / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"} > 0.9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Мало свободного места на диске {{ $labels.instance }} {{ $labels.mountpoint }}"
+          description: "Использование диска > 90% более 15 минут."
+
+  - name: app-availability
+    rules:
+      - alert: DemoApiDown
+        expr: up{job="demo_api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Demo API недоступно на {{ $labels.instance }}"
+          description: "Prometheus не может собрать метрики с demo_api в течение 1 минуты."

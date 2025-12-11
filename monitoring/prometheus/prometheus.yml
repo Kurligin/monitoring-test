@@ -1,0 +1,54 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+  external_labels:
+    environment: "prod"
+    cluster: "main"
+
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
+scrape_configs:
+  # Сам Prometheus
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  # Центральный сервер: системные метрики
+  - job_name: "node_exporter"
+    static_configs:
+      - targets:
+          - "srv1:9100"
+          - "srv2:9100"
+          - "srv3:9100"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Контейнеры: cadvisor
+  - job_name: "cadvisor"
+    static_configs:
+      - targets:
+          - "srv1:8080"
+          - "srv2:8080"
+          - "srv3:8080"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # Python API
+  - job_name: "demo_api"
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "srv1:8000"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
