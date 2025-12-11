@@ -1,0 +1,120 @@
+{
+  "id": null,
+  "uid": "demo-api",
+  "title": "App / Demo API",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "tags": ["app", "demo_api"],
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 2,
+        "query": "label_values(demo_api_requests_total, instance)",
+        "current": {
+          "text": "All",
+          "value": ".*"
+        },
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "endpoint",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 2,
+        "query": "label_values(demo_api_requests_total, endpoint)",
+        "current": {
+          "text": "/api/hello",
+          "value": "/api/hello"
+        },
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Current RPS",
+      "id": 1,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(demo_api_requests_total{instance=~\"$instance\",endpoint=~\"$endpoint\"}[1m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Error rate (%)",
+      "id": 2,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "100 * sum(rate(demo_api_requests_total{http_status!~\"2..\",instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m])) / sum(rate(demo_api_requests_total{instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate (RPS)",
+      "id": 3,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(demo_api_requests_total{instance=~\"$instance\",endpoint=~\"$endpoint\"}[1m]))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50 / p90 / p99",
+      "id": 4,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(demo_api_request_latency_seconds_bucket{instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.9, sum by (le) (rate(demo_api_request_latency_seconds_bucket{instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m])))",
+          "legendFormat": "p90",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(demo_api_request_latency_seconds_bucket{instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP codes",
+      "id": 5,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (http_status) (rate(demo_api_requests_total{instance=~\"$instance\",endpoint=~\"$endpoint\"}[5m]))",
+          "legendFormat": "{{http_status}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
