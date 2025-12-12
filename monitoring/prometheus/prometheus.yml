@@ -26,7 +26,12 @@ scrape_configs:
     static_configs:
       - targets:
           - "192.168.0.4:9100"
+        labels:
+          nodename: "main"
+      - targets:
           - "192.168.0.5:9100"
+        labels:
+          nodename: "analytics"
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
