@@ -1,22 +1,60 @@
-// Читаем логи контейнеров из Docker daemon
-loki.source.docker "docker" {
-  host       = "unix:///var/run/docker.sock"
-  forward_to = [loki.process.add_labels.receiver]
+// 1) Discovery контейнеров Docker
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "10s"
 }
 
-// Добавляем полезные лейблы (низкая кардинальность!)
-loki.process "add_labels" {
-  stage.labels {
-    values = {
-      nodename = env("NODE_NAME"),
-      env      = "prod",
-    }
+// 2) Приводим лейблы к “человеческим” и низкокардинальным
+discovery.relabel "containers_logs" {
+  targets = discovery.docker.containers.targets
+
+  // имя контейнера без ведущего "/"
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+    replacement   = "$1"
   }
 
+  // образ
+  rule {
+    source_labels = ["__meta_docker_container_image"]
+    target_label  = "image"
+  }
+
+  // docker compose service (если есть)
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // имя ноды (задаём через env в compose)
+  rule {
+    replacement  = env("NODE_NAME")
+    target_label = "nodename"
+  }
+
+  // окружение (можно тоже через env)
+  rule {
+    replacement  = "prod"
+    target_label = "env"
+  }
+}
+
+// 3) Чтение логов контейнеров и отправка в pipeline
+loki.source.docker "docker_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers_logs.output
+  forward_to = [loki.process.pipeline.receiver]
+}
+
+// 4) Минимальная обработка (можно расширять позже)
+loki.process "pipeline" {
+  // тут можно добавить stages (drop, json, regex, sampling и т.д.)
   forward_to = [loki.write.to_loki.receiver]
 }
 
-// Отправляем в Loki (single-tenant)
+// 5) Отправка в Loki
 loki.write "to_loki" {
   endpoint {
     url = env("LOKI_URL")
