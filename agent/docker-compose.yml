@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  node_exporter:
+    image: prom/node-exporter:v1.8.1
+    container_name: node_exporter
+    pid: "host"
+    network_mode: "host"
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - "/:/host:ro,rslave"
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    environment:
+      - NODE_NAME=analytics
+      - LOKI_URL=http://192.168.0.4:3100/loki/api/v1/push
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./alloy.river:/etc/alloy/config.river:ro
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.river"]
+    ports:
+      - "12345:12345"
+    restart: unless-stopped

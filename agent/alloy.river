@@ -1,0 +1,24 @@
+// Читаем логи контейнеров из Docker daemon
+loki.source.docker "docker" {
+  host       = "unix:///var/run/docker.sock"
+  forward_to = [loki.process.add_labels.receiver]
+}
+
+// Добавляем полезные лейблы (низкая кардинальность!)
+loki.process "add_labels" {
+  stage.labels {
+    values = {
+      nodename = env("NODE_NAME"),
+      env      = "prod",
+    }
+  }
+
+  forward_to = [loki.write.to_loki.receiver]
+}
+
+// Отправляем в Loki (single-tenant)
+loki.write "to_loki" {
+  endpoint {
+    url = env("LOKI_URL")
+  }
+}

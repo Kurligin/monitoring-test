@@ -51,29 +51,26 @@ services:
     volumes:
       - "/:/host:ro,rslave"
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: cadvisor
-    privileged: true
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
     ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command:
-      - "--docker_only=true"
-      - "--housekeeping_interval=10s"
+      - "3100:3100"
+    command: ["-config.file=/etc/loki/local-config.yaml"]
     restart: unless-stopped
 
-  app:
-    build:
-      context: ../app
-    container_name: demo_api
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    environment:
+      - NODE_NAME=main
+      - LOKI_URL=http://loki:3100/loki/api/v1/push
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./alloy/alloy.river:/etc/alloy/config.river:ro
+    command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.river"]
     ports:
-      - "8000:8000"
+      - "12345:12345" # метрики/статус Alloy (по желанию закрыть фаерволом)
     restart: unless-stopped
 
 volumes:
