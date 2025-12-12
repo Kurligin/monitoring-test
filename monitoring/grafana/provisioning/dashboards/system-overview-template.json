@@ -1,0 +1,101 @@
+{
+  "id": null,
+  "uid": "system-overview-template",
+  "title": "System / Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "tags": ["system", "node_exporter"],
+  "templating": {
+    "list": [
+      {
+        "name": "nodename",
+        "type": "query",
+        "datasource": "Prometheus",
+        "refresh": 2,
+        "query": "label_values(node_uname_info, nodename)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ".*" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Uptime",
+      "id": 10,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false } },
+      "targets": [
+        {
+          "expr": "time() - node_boot_time_seconds{nodename=~\"$nodename\"}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU usage (%)",
+      "id": 1,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "avg by (nodename) (rate(node_cpu_seconds_total{mode!=\"idle\",nodename=~\"$nodename\"}[5m])) * 100",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory usage (%)",
+      "id": 2,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "(node_memory_MemTotal_bytes{nodename=~\"$nodename\"} - node_memory_MemAvailable_bytes{nodename=~\"$nodename\"}) / node_memory_MemTotal_bytes{nodename=~\"$nodename\"} * 100",
+          "legendFormat": "{{nodename}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk usage / (%)",
+      "id": 3,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "(node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",nodename=~\"$nodename\"} - node_filesystem_free_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",nodename=~\"$nodename\"}) / node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\",nodename=~\"$nodename\"} * 100",
+          "legendFormat": "{{nodename}} /",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Network RX/TX (bytes/s)",
+      "id": 4,
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "targets": [
+        {
+          "expr": "sum by (nodename) (rate(node_network_receive_bytes_total{device!~\"lo\",nodename=~\"$nodename\"}[5m]))",
+          "legendFormat": "{{nodename}} RX",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (nodename) (rate(node_network_transmit_bytes_total{device!~\"lo\",nodename=~\"$nodename\"}[5m]))",
+          "legendFormat": "{{nodename}} TX",
+          "refId": "B"
+        }
+      ]
+    }
+  ]
+}

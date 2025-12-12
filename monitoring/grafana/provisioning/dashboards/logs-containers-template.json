@@ -1,0 +1,64 @@
+{
+  "id": null,
+  "uid": "logs-containers-template",
+  "title": "Logs / Containers",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "tags": ["logs", "loki", "alloy"],
+  "templating": {
+    "list": [
+      {
+        "name": "nodename",
+        "type": "query",
+        "datasource": "Loki",
+        "refresh": 2,
+        "query": "label_values(nodename)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ".*" }
+      },
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Loki",
+        "refresh": 2,
+        "query": "label_values(service)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ".*" }
+      },
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": "Loki",
+        "refresh": 2,
+        "query": "label_values(container)",
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": ".*" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "logs",
+      "title": "Container logs",
+      "id": 1,
+      "datasource": "Loki",
+      "gridPos": { "h": 18, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "{nodename=~\"$nodename\",service=~\"$service\",container=~\"$container\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none"
+      }
+    }
+  ]
+}

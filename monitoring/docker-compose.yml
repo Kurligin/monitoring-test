@@ -70,7 +70,7 @@ services:
       - ./alloy/alloy.river:/etc/alloy/config.river:ro
     command: ["run", "--server.http.listen-addr=0.0.0.0:12345", "/etc/alloy/config.river"]
     ports:
-      - "12345:12345" # метрики/статус Alloy (по желанию закрыть фаерволом)
+      - "12345:12345"
     restart: unless-stopped
 
 volumes:
